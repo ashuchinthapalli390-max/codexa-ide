@@ -3,9 +3,6 @@ import { SubscriptionsPricingSection } from "@/components/sections/Subscriptions
 import { ModelAccessMatrix } from "@/components/pricing/ModelAccessMatrix";
 import { FAQSection } from "@/components/sections/FAQSection";
 import { Metadata } from "next";
-import { cookies } from "next/headers";
-import { resolveInitialRoleAndEntitlement } from "@/lib/services/user-service";
-import { isLeadershipRole } from "@/lib/auth/roles";
 
 export const metadata: Metadata = {
   title: "Pricing & Plans — CodeXa Studio IDE",
@@ -14,25 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function PricingPage() {
-  const cookieStore = cookies();
-  const sessionCookie = cookieStore.get("cxa_session")?.value;
-  let serverIsLeadership = false;
-  if (sessionCookie) {
-    try {
-      const decoded = decodeURIComponent(sessionCookie);
-      const parsed = JSON.parse(decoded);
-      if (parsed?.email) {
-        const { role } = resolveInitialRoleAndEntitlement(parsed.email);
-        serverIsLeadership = isLeadershipRole(role);
-      }
-    } catch {
-      // ignore parse error
-    }
-  }
-
   return (
     <div className="flex flex-col w-full min-h-screen bg-[#000000]">
-      <SubscriptionsPricingSection initialIsLeadership={serverIsLeadership} />
+      <SubscriptionsPricingSection />
       <ModelAccessMatrix />
       <FAQSection />
     </div>

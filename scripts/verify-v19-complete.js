@@ -60,8 +60,10 @@ async function runTests() {
   });
   assert(pricingRes.status === 200, "GET /pricing returns HTTP 200 OK");
   const pricingHtml = await pricingRes.text();
-  assert(pricingHtml.includes("Commercial subscription purchase is not required"), "Leadership exemption notice rendered on pricing page");
-  assert(pricingHtml.includes("Leadership Exempt"), "Pricing CTA button rendered as 'Leadership Exempt'");
+  assert(!pricingHtml.includes("Leadership Exempt"), "Zero 'Leadership Exempt' internal labels leaked on public pricing page");
+  assert(!pricingHtml.includes("Managed via CodeXa Agency governance"), "Zero 'Managed via CodeXa Agency governance' internal labels on public pricing cards");
+  assert(pricingHtml.includes("Get Started"), "Public pricing renders commercial 'Get Started' action buttons");
+  assert(pricingHtml.includes("Contact Us"), "Public pricing renders 'Contact Us' for custom/team enterprise tier");
 
   // -------------------------------------------------------------
   // TEST SECTION 3: Phase 14 Role-Based Download Security
