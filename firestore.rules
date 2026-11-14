@@ -1,0 +1,193 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // HELPER FUNCTIONS (Least Privilege & Default-Deny Security)
+    // =========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(requiredRole) {
+      return isAuthenticated() && getUserData().role == requiredRole;
+    }
+
+    function isLeadership() {
+      return isAuthenticated() && (
+        getUserData().role in ['founder', 'co_founder', 'cto', 'admin', 'hr', 'team_lead']
+      );
+    }
+
+    function isHrOrAdmin() {
+      return isAuthenticated() && (
+        getUserData().role in ['founder', 'co_founder', 'admin', 'hr']
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserData().role in ['founder', 'admin']
+      );
+    }
+
+    // Default-deny all undefined collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // 1. USERS & PROFILES COLLECTION
+    // =========================================================================
+    match /users/{userId} {
+      // Users may read their own profile; Leadership can inspect user profiles
+      allow read: if isOwner(userId) || isLeadership();
+
+      // Users can initialize their own profile on first login (with safe customer defaults)
+      allow create: if isOwner(userId)
+        && request.resource.data.role == 'customer'
+        && request.resource.data.entitlement == 'free'
+        && request.resource.data.agencyVerified == false
+        && request.resource.data.status == 'active';
+
+      // Users can update only non-privileged profile fields (displayName, photoURL, lastLoginAt)
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.entitlement == resource.data.entitlement
+        && request.resource.data.agencyVerified == resource.data.agencyVerified
+        && request.resource.data.status == resource.data.status
+        && (!('tokenBalance' in request.resource.data) || request.resource.data.tokenBalance == resource.data.tokenBalance);
+
+      // Only trusted Admin / Leadership can modify roles or entitlements
+      allow update: if isHrOrAdmin() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 2. INVITATIONS COLLECTION (Interns & Agency Onboarding)
+    // =========================================================================
+    match /invitations/{inviteId} {
+      // Authenticated users can read an invitation token to claim it; HR/Leadership can list all
+      allow read: if isAuthenticated();
+
+      // Only HR, Leadership or Admin can create invitations
+      allow create: if isHrOrAdmin();
+
+      // Users can claim an invitation (only updating status to 'claimed' with their UID)
+      allow update: if isAuthenticated()
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'claimed'
+        && request.resource.data.claimedByUid == request.auth.uid;
+
+      // Only Admins can revoke or delete invitations
+      allow delete: if isHrOrAdmin();
+    }
+
+    // =========================================================================
+    // 3. ACCESS REQUESTS (Agency Identity Linking Requests)
+    // =========================================================================
+    match /access_requests/{requestId} {
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid) || isHrOrAdmin();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isHrOrAdmin();
+    }
+
+    // =========================================================================
+    // 4. INTERN WORKSPACE (Tasks & Progress)
+    // =========================================================================
+    match /intern_tasks/{taskId} {
+      // Interns read their own tasks; Team Leads and HR read all tasks
+      allow read: if (isAuthenticated() && resource.data.internUid == request.auth.uid)
+        || isLeadership();
+
+      // Interns can update status to 'submitted'
+      allow update: if isAuthenticated() && resource.data.internUid == request.auth.uid
+        && request.resource.data.status in ['in_progress', 'submitted'];
+
+      // Leadership can create, reassign, or mark tasks completed
+      allow create, update, delete: if isLeadership();
+    }
+
+    // =========================================================================
+    // 5. AGENCY WORKSPACE (Teams & Resources)
+    // =========================================================================
+    match /agency_teams/{teamId} {
+      allow read: if hasRole('agency_member') || isLeadership();
+      allow write: if isLeadership();
+    }
+
+    match /agency_resources/{resId} {
+      allow read: if hasRole('agency_member') || isLeadership();
+      allow write: if isLeadership();
+    }
+
+    // =========================================================================
+    // 6. REVIEWS & MODERATION
+    // =========================================================================
+    match /reviews/{reviewId} {
+      // Anyone (including public visitors) can read approved reviews
+      allow read: if resource.data.status == 'APPROVED' || isLeadership();
+
+      // Authenticated users can submit a review with status forced to 'PENDING'
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+
+      // Only Moderators/Admins can approve or reject reviews
+      allow update: if isLeadership() && request.resource.data.status in ['APPROVED', 'REJECTED'];
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 7. SUBSCRIPTIONS & ENTITLEMENTS (Strict Server-Side Only Writes)
+    // =========================================================================
+    match /user_subscriptions/{subId} {
+      // Users may read their own subscription
+      allow read: if isOwner(subId) || isLeadership();
+
+      // Client writes are completely denied: Subscriptions must be activated via server Admin SDK
+      allow write: if false;
+    }
+
+    match /ai_usage_events/{eventId} {
+      allow read: if isOwner(resource.data.uid) || isLeadership();
+      allow write: if false; // Generated via server metering route
+    }
+
+    // =========================================================================
+    // 8. NOTIFICATIONS & PRE-BETA RESERVATIONS
+    // =========================================================================
+    match /release_notifications/{notifId} {
+      allow create: if true; // Public signup for download releases
+      allow read, write: if isLeadership();
+    }
+
+    match /prebeta_reservations/{resId} {
+      allow create: if true; // Public or authenticated pre-beta reservations
+      allow read, write: if isLeadership();
+    }
+
+    // =========================================================================
+    // 9. AUDIT LOGS (Immutable Security Trail)
+    // =========================================================================
+    match /audit_logs/{logId} {
+      // Only Leadership may view audit trails
+      allow read: if isLeadership();
+
+      // Immutable log: Client cannot delete or alter audit logs
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+  }
+}

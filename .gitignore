@@ -1,0 +1,52 @@
+# Next.js build output
+.next/
+out/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment Files - STRICTLY EXCLUDED
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# Firebase & Secret Keys
+*-service-account*.json
+firebase-service-account.json
+service-account.json
+*.pem
+*.key
+credentials.json
+
+# Firebase Cache & Emulators
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Logs & Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
