@@ -6,7 +6,7 @@ import { getGsap } from "@/lib/motion/gsapSetup";
 import { useReducedMotion } from "@/lib/motion/useReducedMotion";
 import { MOTION_EASINGS } from "@/lib/motion/tokens";
 
-interface ComparisonItem {
+export interface ComparisonItem {
   category: string;
   rows: {
     dimension: string;
@@ -17,7 +17,7 @@ interface ComparisonItem {
   }[];
 }
 
-const COMPARISON_CATEGORIES: ComparisonItem[] = [
+export const COMPARISON_CATEGORIES: ComparisonItem[] = [
   {
     category: "A • Editor & Workspace Core",
     rows: [
@@ -152,7 +152,7 @@ const COMPARISON_CATEGORIES: ComparisonItem[] = [
   },
 ];
 
-const PRICING_COMPARISON_CARDS = [
+export const PRICING_COMPARISON_CARDS = [
   {
     product: "CodeXa Studio IDE",
     highlight: true,

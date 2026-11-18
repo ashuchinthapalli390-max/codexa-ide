@@ -36,6 +36,8 @@
   --content-gap: 32px;
   --card-gap: 24px;
   --header-height: 72px;
+  /* announcement bar + sticky header; pinned scroll scenes stick below this */
+  --nav-offset: 104px;
   --surface-radius: 16px;
   --overlay-layer: 90;
   --motion-duration: 350ms;
@@ -51,7 +53,8 @@ html {
   color-scheme: dark;
   scroll-behavior: smooth;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  overflow-x: hidden;
+  /* clip (not hidden) so position: sticky keeps working for pinned scroll scenes */
+  overflow-x: clip;
   max-width: 100vw;
 }
 
@@ -60,7 +63,7 @@ body {
   background-color: #000000;
   color: rgba(255, 255, 255, 0.96);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -207,6 +210,48 @@ body {
 
 .promo-banner-container:hover .promo-scroll {
   animation-play-state: paused;
+}
+
+/* Pinned scroll scene viewport (sits under the sticky navbar) */
+.pin-stage {
+  position: sticky;
+  top: var(--nav-offset);
+  height: calc(100svh - var(--nav-offset));
+}
+
+/* Range slider used by the homepage usage estimator */
+.cx-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--fill, #fff) var(--pct, 50%), rgba(255, 255, 255, 0.1) var(--pct, 50%));
+  cursor: pointer;
+}
+.cx-range:focus-visible {
+  outline: 2px solid rgba(34, 197, 94, 0.6);
+  outline-offset: 6px;
+}
+.cx-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 4px solid #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease;
+}
+.cx-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.cx-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 4px solid #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
 /* Reduced Motion Support */

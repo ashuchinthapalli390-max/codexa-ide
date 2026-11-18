@@ -6,9 +6,9 @@ import { getGsap } from "@/lib/motion/gsapSetup";
 import { useReducedMotion } from "@/lib/motion/useReducedMotion";
 import { MOTION_EASINGS } from "@/lib/motion/tokens";
 
-type FAQCategory = "all" | "product" | "models" | "presale" | "billing" | "platforms";
+export type FAQCategory = "all" | "product" | "models" | "presale" | "billing" | "platforms";
 
-interface FAQItem {
+export interface FAQItem {
   id: string;
   category: FAQCategory | FAQCategory[];
   number: string;
@@ -16,7 +16,7 @@ interface FAQItem {
   answer: string;
 }
 
-const ALL_FAQS: FAQItem[] = [
+export const ALL_FAQS: FAQItem[] = [
   // --- PRE-SALE & SUBSCRIPTION FAQS (18 Required Questions) ---
   {
     id: "q01-what-is-reservation",

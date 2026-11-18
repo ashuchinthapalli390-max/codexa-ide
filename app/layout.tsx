@@ -81,7 +81,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#000000] text-white min-h-screen selection:bg-white selection:text-black font-sans overflow-x-hidden max-w-full">
+      <body className="bg-[#000000] text-white min-h-screen selection:bg-white selection:text-black font-sans overflow-x-clip max-w-full">
         <AuthProvider>
           {/* Cinematic Minimal Intro Sequence (First visit per session only) */}
           <CinematicLoader />
@@ -90,7 +90,7 @@ export default function RootLayout({
 
           {/* Page Transition & Hydration Settling */}
           <PageTransitionProvider>
-            <main className="min-h-screen w-full max-w-full overflow-x-hidden">{children}</main>
+            <main className="min-h-screen w-full max-w-full overflow-x-clip">{children}</main>
           </PageTransitionProvider>
 
           <Footer />
