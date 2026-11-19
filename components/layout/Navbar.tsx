@@ -1,344 +1,258 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, Check, Copy, Menu, User, X } from "lucide-react";
 import { CodeXaLogo } from "@/components/ui/CodeXaLogo";
 import { AgencyAuthModal } from "@/components/auth/AgencyAuthModal";
-import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { AccountMenu } from "@/components/layout/AccountMenu";
-import { NavMegaMenu } from "@/components/layout/NavMegaMenu";
-import { MAIN_NAV_ITEMS, NavItemConfig } from "@/lib/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getRoleBadgeLabel } from "@/lib/auth/roles";
-import {
-  Download,
-  Menu,
-  X,
-  User,
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-} from "lucide-react";
+import { ANNOUNCEMENT_DATA } from "@/lib/navigation";
+
+export const PRIMARY_LINKS = [
+  { label: "Product", href: "/features" },
+  { label: "AI", href: "/ai" },
+  { label: "Models", href: "/models" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Compare", href: "/compare" },
+  { label: "Platforms", href: "/platforms" },
+  { label: "Docs", href: "/docs" },
+];
+
+const MORE_LINKS = [
+  { label: "Workspace demo", href: "/workspace" },
+  { label: "Integrations", href: "/integrations" },
+  { label: "Download", href: "/download" },
+  { label: "Releases", href: "/releases" },
+  { label: "Reviews", href: "/reviews" },
+  { label: "FAQ", href: "/faq" },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(href + "/");
+}
 
 export function Navbar() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const { user, userProfile, signOut } = useAuth();
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileExpandedSection, setMobileExpandedSection] = useState<string | null>(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [open, setOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Scroll position listener for dynamic opacity & border illumination
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Keyboard Escape listener
+  useEffect(() => setOpen(false), [pathname]);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setActiveDropdown(null);
-        setMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Close menus on route change
+  // Lock page scroll while the mobile menu is open
   useEffect(() => {
-    setActiveDropdown(null);
-    setMobileMenuOpen(false);
-    setMobileExpandedSection(null);
-  }, [pathname]);
-
-  // Clean timeout on unmount
-  useEffect(() => {
+    document.documentElement.style.overflow = open ? "hidden" : "";
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      document.documentElement.style.overflow = "";
     };
-  }, []);
+  }, [open]);
 
-  const handleMouseEnter = (item: NavItemConfig) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (item.isMega && item.megaConfig) {
-      setActiveDropdown(item.label);
-    } else {
-      setActiveDropdown(null);
+  const copyCoupon = async () => {
+    try {
+      await navigator.clipboard.writeText(ANNOUNCEMENT_DATA.couponCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked: ignore */
     }
   };
 
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-    }, 120);
-  };
-
-  const handleDropdownEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  };
-
-  const activeMegaItem = MAIN_NAV_ITEMS.find(
-    (item) => item.label === activeDropdown && item.isMega && item.megaConfig
-  );
+  const displayName = userProfile?.displayName || user?.displayName || "CodeXa Developer";
 
   return (
     <>
-      <header className={`sticky top-0 z-[1001] w-full border-b transition-all duration-300 ${
-        isScrolled
-          ? "border-white/[0.12] bg-[#020203]/98 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.85)]"
-          : "border-white/[0.06] bg-[#020203]/85 backdrop-blur-xl"
-      }`}>
-        {/* LEVEL 1: Minimal Announcement Bar */}
-        <AnnouncementBar />
+      <header
+        className={`sticky top-0 z-[1001] w-full border-b transition-[background,border-color] duration-300 ${
+          scrolled || open ? "border-white/[0.09] bg-black/80 backdrop-blur-2xl" : "border-transparent bg-black/40 backdrop-blur-md"
+        }`}
+      >
+        {/* Announcement strip (≥ sm) */}
+        <div className="hidden h-9 items-center justify-center gap-3 border-b border-white/[0.06] px-4 text-[12px] text-white/60 sm:flex">
+          <span className="rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#4ADE80]">
+            Pre-beta
+          </span>
+          <span>{ANNOUNCEMENT_DATA.discountPercent}% off your first month on every plan</span>
+          <button
+            onClick={copyCoupon}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/10 px-2 py-0.5 font-mono text-[11px] text-white transition hover:border-white/30"
+            aria-label={`Copy coupon ${ANNOUNCEMENT_DATA.couponCode}`}
+          >
+            {ANNOUNCEMENT_DATA.couponCode}
+            {copied ? <Check className="h-3 w-3 text-[#4ADE80]" /> : <Copy className="h-3 w-3 text-white/50" />}
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-codexa-offer"))}
+            className="text-white/80 underline-offset-4 hover:text-white hover:underline"
+          >
+            Claim offer
+          </button>
+        </div>
 
-        {/* LEVEL 2: Main Navigation Bar (~70px height) */}
-        <div className="mx-auto flex h-[70px] max-w-[1360px] items-center justify-between px-4 sm:px-6 lg:px-8 select-none">
-          {/* Left: CodeXa Studio IDE Logo & Wordmark (Strictly links to Home) */}
-          <div className="flex items-center shrink-0">
-            <CodeXaLogo size="md" subtitle="STUDIO IDE" href="/" />
-          </div>
+        <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <CodeXaLogo size="sm" subtitle="STUDIO IDE" href="/" />
 
-          {/* Center: Desktop Navigation (5 Primary Destinations) */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 shrink-0">
-            {MAIN_NAV_ITEMS.map((item) => {
-              const isCurrent = pathname === item.href || activeDropdown === item.label;
-              const hasDropdown = Boolean(item.isMega && item.megaConfig);
-
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+            {PRIMARY_LINKS.map((l) => {
+              const on = isActive(pathname, l.href);
               return (
-                <div
-                  key={item.label}
-                  className="relative shrink-0"
-                  onMouseEnter={() => handleMouseEnter(item)}
-                  onMouseLeave={handleMouseLeave}
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`relative rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors ${
+                    on ? "text-white" : "text-white/60 hover:text-white"
+                  }`}
                 >
-                  <Link
-                    href={item.href}
-                    className={`px-3 py-1.5 rounded-[8px] text-[13.5px] font-sans font-medium transition-all whitespace-nowrap inline-flex items-center gap-1.5 select-none ${
-                      isCurrent
-                        ? "text-white bg-white/[0.08]"
-                        : "text-white/70 hover:text-white hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    <span className="whitespace-nowrap">{item.label}</span>
-                    {hasDropdown && (
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform duration-200 text-white/50 shrink-0 ${
-                          activeDropdown === item.label ? "rotate-180 text-white" : ""
-                        }`}
-                      />
-                    )}
-                  </Link>
-                </div>
+                  {on && (
+                    <motion.span
+                      layoutId="nav-active"
+                      className="absolute inset-0 rounded-lg border border-white/10 bg-white/[0.06]"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative">{l.label}</span>
+                </Link>
               );
             })}
           </nav>
 
-          {/* Right Actions: Single Sign In + Single-Line Download CodeXa CTA */}
-          <div className="hidden md:flex items-center gap-3 shrink-0">
-            {user ? (
-              <AccountMenu
-                user={{
-                  name: userProfile?.displayName || user.displayName || "CodeXa Developer",
-                  email: user.email || undefined,
-                  photoURL: user.photoURL || undefined,
-                }}
-                profile={userProfile}
-                onSignOut={signOut}
-              />
-            ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="px-3.5 py-2 rounded-[8px] text-[13.5px] font-sans font-medium text-white/75 hover:text-white hover:bg-white/[0.06] transition-colors whitespace-nowrap inline-flex items-center gap-1.5 shrink-0"
-              >
-                <User className="w-3.5 h-3.5 text-white/60 shrink-0" />
-                <span className="whitespace-nowrap">Sign In</span>
-              </button>
-            )}
-
+          <div className="flex items-center gap-2">
+            <div className="hidden md:block">
+              {user ? (
+                <AccountMenu
+                  user={{ name: displayName, email: user.email || undefined, photoURL: user.photoURL || undefined }}
+                  profile={userProfile}
+                  onSignOut={signOut}
+                />
+              ) : (
+                <button
+                  onClick={() => setAuthOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13.5px] font-medium text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+                >
+                  <User className="h-3.5 w-3.5" /> Sign in
+                </button>
+              )}
+            </div>
             <Link
-              href="/#availability"
-              className="h-[40px] px-4 xl:px-5 rounded-[8px] bg-white/10 hover:bg-white text-white hover:text-black text-[13.5px] font-sans font-semibold tracking-[-0.02em] inline-flex items-center gap-2 transition-all border border-white/15 hover:border-white shadow-sm shrink-0 whitespace-nowrap"
+              href="/pricing"
+              className="hidden h-9 items-center gap-2 rounded-lg bg-white px-4 text-[13.5px] font-semibold tracking-[-0.02em] text-black transition hover:bg-[#E5E7EB] sm:inline-flex"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="whitespace-nowrap">Available Soon</span>
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />
+              Get early access
             </Link>
-          </div>
-
-          {/* Mobile / Tablet Compact Actions */}
-          <div className="flex lg:hidden items-center gap-2 shrink-0">
-            <Link
-              href="/#availability"
-              className="h-[36px] px-3 rounded-[8px] bg-white/10 text-white text-[12px] font-sans font-semibold inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap border border-white/15"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Available Soon</span>
-            </Link>
-
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-[8px] text-white/70 hover:text-white bg-white/[0.05] border border-white/10 focus:outline-none shrink-0"
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
+              onClick={() => setOpen((v) => !v)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white lg:hidden"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span key={open ? "x" : "m"} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </div>
-
-        {/* Mega Menu Dropdown */}
-        {activeMegaItem && activeMegaItem.megaConfig && (
-          <NavMegaMenu
-            config={activeMegaItem.megaConfig}
-            onClose={() => setActiveDropdown(null)}
-            onMouseEnter={handleDropdownEnter}
-            onMouseLeave={handleMouseLeave}
-          />
-        )}
-
-        {/* Backdrop overlay for mega-menu */}
-        {activeDropdown && (
-          <div
-            className="fixed inset-0 top-[102px] sm:top-[106px] bg-black/85 backdrop-blur-md z-[995]"
-            onClick={() => setActiveDropdown(null)}
-          />
-        )}
-
-        {/* Mobile / Tablet Slide-Down Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-white/10 bg-[#070709] px-4 pt-4 pb-8 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-106px)] overflow-y-auto">
-            {/* Primary Nav Links */}
-            <nav className="flex flex-col space-y-1">
-              {MAIN_NAV_ITEMS.map((item) => {
-                const hasSub = Boolean(item.isMega && item.megaConfig);
-                const isExpanded = mobileExpandedSection === item.label;
-
-                if (hasSub && item.megaConfig) {
-                  return (
-                    <div key={item.label} className="border-b border-white/[0.05] pb-1">
-                      <button
-                        onClick={() =>
-                          setMobileExpandedSection(isExpanded ? null : item.label)
-                        }
-                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-[8px] text-[14px] font-sans font-medium text-white/80 hover:text-white hover:bg-white/[0.04] transition-colors"
-                      >
-                        <span>{item.label}</span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-white/50 transition-transform ${
-                            isExpanded ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="pl-4 pr-2 py-2 space-y-2 bg-white/[0.02] rounded-lg mt-1">
-                          {item.megaConfig.categories.flatMap((c) =>
-                            c.items.map((sub, idx) => (
-                              <Link
-                                key={idx}
-                                href={sub.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="block py-1.5 text-xs text-white/70 hover:text-white"
-                              >
-                                <span className="font-semibold block text-white/90">
-                                  {sub.title}
-                                </span>
-                                <span className="text-[11px] text-white/50 block line-clamp-1">
-                                  {sub.desc}
-                                </span>
-                              </Link>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-3 py-2.5 rounded-[8px] text-[14px] font-sans font-medium text-white/80 hover:text-white hover:bg-white/[0.04] transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Account / Action Area */}
-            <div className="pt-3 border-t border-white/10 space-y-3">
-              {user ? (
-                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 space-y-2 text-xs font-sans">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-semibold truncate max-w-[150px]">
-                      {userProfile?.displayName || user.displayName || "CodeXa Developer"}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 uppercase font-bold">
-                      {getRoleBadgeLabel(userProfile?.role || "customer")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-white/[0.08]">
-                    <Link
-                      href="/account"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="text-white/70 hover:text-white font-mono text-[11px]"
-                    >
-                      Account Dashboard →
-                    </Link>
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="text-red-400 hover:text-red-300 text-[11px] font-semibold"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setAuthModalOpen(true);
-                  }}
-                  className="w-full text-left px-3.5 py-2.5 rounded-[8px] text-[13px] font-sans font-medium text-white/80 hover:text-white hover:bg-white/[0.06] border border-white/10 flex items-center gap-2"
-                >
-                  <User className="w-3.5 h-3.5 text-white/60" />
-                  <span>Sign In</span>
-                </button>
-              )}
-
-              <Link
-                href="/download"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 px-4 rounded-[8px] bg-white text-[#050506] text-xs font-sans font-bold flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download CodeXa Studio IDE</span>
-              </Link>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Hardware Key / Agency Authentication Modal */}
-      <AgencyAuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={() => setAuthModalOpen(false)}
-      />
+      {/* Mobile / tablet full-screen menu */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ clipPath: "inset(0 0 100% 0)" }}
+            animate={{ clipPath: "inset(0 0 0% 0)" }}
+            exit={{ clipPath: "inset(0 0 100% 0)" }}
+            transition={{ duration: 0.45, ease: [0.76, 0, 0.24, 1] }}
+            className="fixed inset-x-0 bottom-0 top-[var(--nav-offset)] z-[1000] overflow-y-auto bg-black lg:hidden"
+          >
+            <div aria-hidden className="absolute inset-0 bg-subtle-grid opacity-20" />
+            <div className="relative flex min-h-full flex-col px-5 pb-10 pt-6">
+              <nav aria-label="Mobile" className="flex flex-col">
+                {PRIMARY_LINKS.map((l, i) => (
+                  <motion.div
+                    key={l.href}
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + i * 0.04, duration: 0.4 }}
+                  >
+                    <Link
+                      href={l.href}
+                      className={`flex items-center justify-between border-b border-white/[0.07] py-4 text-[28px] font-semibold tracking-[-0.04em] ${
+                        isActive(pathname, l.href) ? "text-white" : "text-white/60"
+                      }`}
+                    >
+                      {l.label}
+                      <ArrowUpRight className="h-5 w-5 text-white/30" />
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }} className="mt-6 grid grid-cols-2 gap-2">
+                {MORE_LINKS.map((l) => (
+                  <Link key={l.href} href={l.href} className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] text-white/75">
+                    {l.label}
+                  </Link>
+                ))}
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-auto space-y-3 pt-8">
+                {user ? (
+                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4 text-[13px]">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-white">{displayName}</p>
+                      <p className="font-mono text-[10px] uppercase text-[#4ADE80]">{getRoleBadgeLabel(userProfile?.role || "customer")}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Link href="/account" className="text-white/70 hover:text-white">
+                        Account
+                      </Link>
+                      <button onClick={() => { signOut(); setOpen(false); }} className="text-rose-300">
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setOpen(false); setAuthOpen(true); }}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/15 text-[15px] font-medium text-white"
+                  >
+                    <User className="h-4 w-4" /> Sign in
+                  </button>
+                )}
+                <Link href="/pricing" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white text-[15px] font-semibold text-black">
+                  Get early access
+                </Link>
+                <button onClick={copyCoupon} className="w-full text-center font-mono text-[11px] text-white/45">
+                  Tap to copy {ANNOUNCEMENT_DATA.couponCode} · {ANNOUNCEMENT_DATA.discountPercent}% off first month {copied ? "✓" : ""}
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AgencyAuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onSuccess={() => setAuthOpen(false)} />
     </>
   );
 }

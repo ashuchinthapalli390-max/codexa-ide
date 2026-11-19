@@ -1,17 +1,31 @@
 import React from "react";
 import type { Metadata } from "next";
-import { CompetitorComparisonSection } from "@/components/sections/CompetitorComparisonSection";
+import { PageHero } from "@/components/experience/page-kit";
+import { CompareSection } from "@/components/experience/CompareSection";
+import { HighlightsStack } from "@/components/experience/HighlightsStack";
+import { FinalCTA } from "@/components/experience/FinalCTA";
 
 export const metadata: Metadata = {
-  title: "Competitor Comparison — CodeXa vs Cursor, Antigravity & VS Code",
-  description:
-    "An objective, evidence-based architectural and financial comparison of CodeXa Studio IDE vs Cursor, Google Antigravity, and Visual Studio Code.",
+  title: "Compare",
+  description: "CodeXa Studio IDE compared with Cursor, Google Antigravity and VS Code on architecture, AI access, workflow, privacy and price.",
 };
 
 export default function ComparePage() {
   return (
-    <div className="pt-16 pb-20 bg-[#000000] min-h-screen">
-      <CompetitorComparisonSection />
+    <div className="bg-black">
+      <PageHero
+        crumb="Compare"
+        eyebrow="Honest comparison"
+        title={
+          <>
+            CodeXa vs <span className="text-white/40">the editors you know.</span>
+          </>
+        }
+        lead="How CodeXa Studio compares with Cursor, Google Antigravity and VS Code with Copilot — across architecture, AI access, everyday workflow, privacy and price."
+      />
+      <CompareSection index="01" />
+      <HighlightsStack index="02" />
+      <FinalCTA />
     </div>
   );
 }

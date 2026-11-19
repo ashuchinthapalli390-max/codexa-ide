@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, Search } from "lucide-react";
-import { ALL_FAQS, FAQCategory } from "@/components/sections/FAQSection";
+import { ALL_FAQS, FAQCategory } from "@/lib/content/faq";
 import { Reveal, SectionHeading } from "./primitives";
 
 const CATS: { id: FAQCategory; label: string }[] = [
@@ -18,11 +18,21 @@ const CATS: { id: FAQCategory; label: string }[] = [
 
 const INITIAL = 8;
 
-export function FaqExplorer() {
-  const [cat, setCat] = useState<FAQCategory>("all");
+export function FaqExplorer({
+  index = "11",
+  initialCategory = "all",
+  expanded = false,
+  showPageLink = true,
+}: {
+  index?: string;
+  initialCategory?: FAQCategory;
+  expanded?: boolean;
+  showPageLink?: boolean;
+}) {
+  const [cat, setCat] = useState<FAQCategory>(initialCategory);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(ALL_FAQS[0]?.id ?? null);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(expanded);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -41,7 +51,7 @@ export function FaqExplorer() {
       <div className="mx-auto grid max-w-[1280px] gap-12 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
         <div className="lg:sticky lg:top-32 lg:self-start">
           <SectionHeading
-            index="10"
+            index={index}
             eyebrow="Questions"
             title={
               <>
@@ -74,9 +84,11 @@ export function FaqExplorer() {
                 </button>
               ))}
             </div>
-            <Link href="/faq" className="mt-6 inline-block text-[13px] text-white/50 underline-offset-4 hover:text-white hover:underline">
-              Open the full FAQ page
-            </Link>
+            {showPageLink && (
+              <Link href="/faq" className="mt-6 inline-block text-[13px] text-white/50 underline-offset-4 hover:text-white hover:underline">
+                Open the full FAQ page
+              </Link>
+            )}
           </Reveal>
         </div>
 

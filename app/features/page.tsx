@@ -1,109 +1,70 @@
 import React from "react";
 import type { Metadata } from "next";
-import { FeatureShowcaseSection } from "@/components/sections/FeatureShowcaseSection";
-import { ThemeExplorerSection } from "@/components/sections/ThemeExplorerSection";
-import { Button } from "@/components/ui/Button";
-import { Download, Cpu, ShieldCheck, Terminal, Boxes, Zap, GitBranch } from "lucide-react";
+import { ArrowRight, Boxes, Cpu, GitBranch, KeyRound, Laptop, Palette, ShieldCheck, Terminal, Zap } from "lucide-react";
+import { FeatureGrid, GhostLink, PageHero, PrimaryLink, Section, VelocityMarquee } from "@/components/experience/page-kit";
+import { SectionHeading } from "@/components/experience/primitives";
+import { HighlightsStack } from "@/components/experience/HighlightsStack";
+import { ArchitectureStack } from "@/components/experience/ArchitectureStack";
+import { WorkflowRail } from "@/components/experience/WorkflowRail";
+import { ThemeShowcase } from "@/components/experience/sections-extra";
+import { FinalCTA } from "@/components/experience/FinalCTA";
 
 export const metadata: Metadata = {
-  title: "Features & Architecture",
-  description:
-    "Explore the architectural capabilities of CodeXa Studio IDE: local-first AST caching, unified terminal multiplexing, and MCP server integrations.",
+  title: "Features",
+  description: "AST-native editor, multi-model AI router, verification gate, live preview, terminal matrix, visual Git and local-first privacy.",
 };
+
+const FEATURES = [
+  { icon: <Zap className="h-5 w-5" />, title: "AST-native indexing", body: "Your repository is held as an in-memory symbol graph, so lookups and context building take under 50 ms.", tag: "Core" },
+  { icon: <Cpu className="h-5 w-5" />, title: "Multi-model router", body: "Nine models behind one switch. Each request goes to the model that fits it, metered by transparent weights.", tag: "AI" },
+  { icon: <ShieldCheck className="h-5 w-5" />, title: "Verification gate", body: "Fabel 5.1 checks every AI diff for type soundness and compiler invariants before you see it.", tag: "Safety" },
+  { icon: <Laptop className="h-5 w-5" />, title: "Live dual preview", body: "Desktop and mobile viewports render your change as it is written, with no ports to open.", tag: "Runtime" },
+  { icon: <Terminal className="h-5 w-5" />, title: "Terminal matrix", body: "PowerShell, Bash and Zsh sessions side by side, with command suggestions from the agent.", tag: "Tools" },
+  { icon: <GitBranch className="h-5 w-5" />, title: "Visual Git", body: "Branch graph, hunk-level staging and readable AI commit summaries for every change.", tag: "Tools" },
+  { icon: <KeyRound className="h-5 w-5" />, title: "BYOK keychain vault", body: "Use your own provider keys. They live only in your OS keychain and never reach CodeXa servers.", tag: "Privacy" },
+  { icon: <Boxes className="h-5 w-5" />, title: "MCP servers", body: "Connect databases, logs and internal tools through Model Context Protocol so the agent can use them.", tag: "Extend" },
+  { icon: <Palette className="h-5 w-5" />, title: "Theme engine", body: "Obsidian Dark, Pure Black OLED, Midnight Slate, Tokyo Night and Clean Light — or your own palette.", tag: "Comfort" },
+];
 
 export default function FeaturesPage() {
   return (
-    <div className="pt-28 pb-20 bg-[#000000]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-        <div className="max-w-3xl space-y-4">
-          <span className="text-xs sm:text-sm font-sans font-medium uppercase tracking-[2px] text-[#9CA3AF] block">
-            TECHNICAL ARCHITECTURE
-          </span>
-          <h1 className="text-4xl sm:text-6xl font-orbitron font-bold tracking-tight text-white leading-tight">
-            Engineered for <span className="text-white">Uncompromising Velocity.</span>
-          </h1>
-          <p className="text-base text-white/70 font-sans leading-relaxed">
-            CodeXa Studio IDE is built from the ground up for software architects and full-stack builders who demand instant local responsiveness, deep symbol understanding, and zero cloud dependency.
-          </p>
+    <div className="bg-black">
+      <PageHero
+        crumb="Features"
+        eyebrow="Everything in one window"
+        title={
+          <>
+            An editor that <span className="text-white/40">understands your code.</span>
+          </>
+        }
+        lead="CodeXa Studio combines an AST-native editor, a multi-model AI router, a verification gate and a live runtime — designed to work as one system rather than a pile of plugins."
+        actions={
+          <>
+            <PrimaryLink href="/workspace">
+              Try the workspace demo <ArrowRight className="h-4 w-4" />
+            </PrimaryLink>
+            <GhostLink href="/pricing">See plans</GhostLink>
+          </>
+        }
+        stats={[
+          { value: "<50ms", label: "AST indexing" },
+          { value: "9", label: "AI models" },
+          { value: "3", label: "Terminal shells" },
+          { value: "5", label: "Built-in themes" },
+        ]}
+      />
+      <Section id="capabilities">
+        <SectionHeading index="01" eyebrow="Capabilities" title={<>Nine building blocks, <span className="text-white/40">one workspace.</span></>} />
+        <div className="mt-12">
+          <FeatureGrid items={FEATURES} />
         </div>
-      </div>
-
-      <FeatureShowcaseSection />
-      <ThemeExplorerSection />
-
-      {/* Deep-Dive Architectural Grid */}
-      <section className="py-20 border-t border-white/5 bg-[#020202]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12">
-            <h2 className="text-2xl sm:text-3xl font-orbitron font-bold text-white">
-              Under the Hood: Subsystem Specifications
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-mono text-xs">
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <Cpu className="w-4 h-4 text-[#22C55E]" /> 01. In-Memory AST Indexer
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                Parses syntax trees on dedicated worker isolates, providing instant jump-to-definition and symbol dependency lookups across millions of lines of code.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <ShieldCheck className="w-4 h-4 text-[#22C55E]" /> 02. Local-First Isolation
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                No code indexing telemetry is transmitted outside your physical machine. Air-gapped compliance is built directly into the kernel.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <Boxes className="w-4 h-4 text-[#22C55E]" /> 03. Model Context Protocol
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                Integrate external Postgres databases, Redis clusters, and agency APIs into the AI reasoning loop with standard MCP tool definitions.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <Terminal className="w-4 h-4 text-[#22C55E]" /> 04. Multiplex Virtual Terminal
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                Run concurrent shell sessions (PowerShell, Bash, Zsh) with AI command synthesis and auto-fix recommendations on non-zero exit codes.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <GitBranch className="w-4 h-4 text-[#22C55E]" /> 05. Visual Git Staging
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                Hunk-by-hunk commit staging, 3-way merge resolution, and AI-generated commit messages grounded in unified diff AST analysis.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#121316] border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold uppercase text-[11px]">
-                <Zap className="w-4 h-4 text-[#22C55E]" /> 06. Hardware Acceleration
-              </div>
-              <p className="text-white/70 font-sans leading-relaxed text-sm">
-                Direct DirectX/Vulkan/Metal canvas rasterization ensures smooth 120 FPS cursor tracking and instantaneous editor split repositioning.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center">
-        <Button variant="primary" size="lg" href="/download" leftIcon={<Download className="w-4 h-4" />}>
-          Download CodeXa Studio Preview
-        </Button>
-      </div>
+      </Section>
+      <VelocityMarquee rows={["Index · Plan · Generate · ", "Verify · Preview · Ship · "]} />
+      <WorkflowRail />
+      <HighlightsStack index="03" />
+      <ArchitectureStack index="04" />
+      <ThemeShowcase index="05" />
+      <FinalCTA />
     </div>
   );
 }

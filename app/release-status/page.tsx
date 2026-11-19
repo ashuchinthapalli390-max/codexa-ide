@@ -1,17 +1,11 @@
-import React from "react";
 import type { Metadata } from "next";
-import { PlatformAvailabilitySection } from "@/components/sections/PlatformAvailabilitySection";
+import { PlatformsPage } from "@/components/experience/PlatformsPage";
 
 export const metadata: Metadata = {
-  title: "Platform Release Status — CodeXa Studio IDE",
-  description:
-    "Official build and release readiness status for Windows, macOS, Linux, and Android platforms.",
+  title: "Release Status",
+  description: "Live build status, versions and checksums for each CodeXa Studio IDE platform.",
 };
 
-export default function ReleaseStatusPage() {
-  return (
-    <div className="pt-16 pb-20 bg-[#000000] min-h-screen">
-      <PlatformAvailabilitySection />
-    </div>
-  );
+export default function Page() {
+  return <PlatformsPage crumb="Release status" />;
 }

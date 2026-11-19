@@ -1,124 +1,65 @@
 import React from "react";
 import type { Metadata } from "next";
-import { AIShowcaseSection } from "@/components/ai/AIShowcaseSection";
-import { Button } from "@/components/ui/Button";
-import { Download } from "lucide-react";
+import { ArrowRight, CloudOff, Eye, KeyRound, Scale, ShieldCheck, Shuffle } from "lucide-react";
+import { AI_MODELS } from "@/lib/ai/models";
+import { FeatureGrid, GhostLink, PageHero, PrimaryLink, Section, ZoomThrough } from "@/components/experience/page-kit";
+import { SectionHeading } from "@/components/experience/primitives";
+import { AIModes } from "@/components/experience/sections-extra";
+import { ModelConstellation } from "@/components/experience/ModelConstellation";
+import { FinalCTA } from "@/components/experience/FinalCTA";
 
 export const metadata: Metadata = {
-  title: "Multi-Model AI Intelligence",
-  description:
-    "Explore CodeXa AI's Chat, Plan, Agent, and Debug workflows across configurable models like Astra 6, Fabel 5.1, and NEXA.",
+  title: "CodeXa AI",
+  description: "Chat, Plan, Agent and Debug modes across nine models, with unlimited on-device AI, BYOK and a verification gate on every diff.",
 };
 
+const TRUST = [
+  { icon: <CloudOff className="h-5 w-5" />, title: "Offline when you want", body: "NEXA Edge runs entirely on your machine. Turn off the network and keep coding with AI." },
+  { icon: <KeyRound className="h-5 w-5" />, title: "Bring your own keys", body: "Plug in OpenAI, Anthropic, Google or xAI keys. They are stored only in your OS keychain." },
+  { icon: <ShieldCheck className="h-5 w-5" />, title: "Verified output", body: "Fabel 5.1 checks each AI diff for type soundness and compiler invariants before you accept it." },
+  { icon: <Scale className="h-5 w-5" />, title: "Transparent metering", body: "Units = tokens × model weight. Weights are published, and local models always cost zero." },
+  { icon: <Shuffle className="h-5 w-5" />, title: "Automatic fallback", body: "When a model retires, requests route to its successor automatically — no broken workflows." },
+  { icon: <Eye className="h-5 w-5" />, title: "No training on your code", body: "Only the minimum context needed is sent to cloud models, over TLS. Zero telemetry by default." },
+];
+
 export default function AIPage() {
+  const models = AI_MODELS.filter((m) => m.enabled);
   return (
-    <div className="pt-28 pb-20 bg-[#000000]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="max-w-3xl space-y-4">
-          <span className="text-xs sm:text-sm font-sans font-medium uppercase tracking-[2px] text-[#9CA3AF] block">
-            AGENTIC REASONING ENGINE
-          </span>
-          <h1 className="text-4xl sm:text-6xl font-orbitron font-bold tracking-tight text-white leading-tight">
-            Intelligence Grounded in <span className="text-white">Deterministic Code.</span>
-          </h1>
-          <p className="text-base text-white/70 font-sans leading-relaxed">
-            CodeXa AI is not an isolated chat wrapper. It connects into your workspace's compilation graph, generates verifiable diffs, and executes atomic steps with rollback guarantees.
-          </p>
+    <div className="bg-black">
+      <PageHero
+        crumb="CodeXa AI"
+        eyebrow="Multi-model AI, built in"
+        title={
+          <>
+            The right model <span className="text-white/40">for every keystroke.</span>
+          </>
+        }
+        lead="CodeXa routes each request to the model that suits it — fast Flash models for edits, frontier models for refactors and planning, and on-device NEXA Edge when you are offline."
+        actions={
+          <>
+            <PrimaryLink href="/models">
+              Browse the models <ArrowRight className="h-4 w-4" />
+            </PrimaryLink>
+            <GhostLink href="/pricing">See plans</GhostLink>
+          </>
+        }
+        stats={[
+          { value: String(models.length), label: "Models" },
+          { value: String(models.filter((m) => m.type === "FREE_UNLIMITED").length), label: "Free & unlimited" },
+          { value: "4", label: "Work modes" },
+          { value: "1M", label: "Max context" },
+        ]}
+      />
+      <AIModes index="01" />
+      <ZoomThrough word="Nine models." caption="One router decides" />
+      <ModelConstellation index="02" />
+      <Section id="trust">
+        <SectionHeading index="03" eyebrow="Privacy & control" title={<>Powerful AI, <span className="text-white/40">on your terms.</span></>} />
+        <div className="mt-12">
+          <FeatureGrid items={TRUST} />
         </div>
-      </div>
-
-      <AIShowcaseSection />
-
-      {/* Model Architecture Comparison Table */}
-      <section className="py-20 border-t border-white/5 bg-[#020202]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-10">
-            <h2 className="text-2xl sm:text-3xl font-orbitron font-bold text-white">
-              Model Lineup &amp; Compute Profiles
-            </h2>
-            <p className="text-sm text-white/70 font-sans mt-1">
-              Configure model routing based on task complexity, latency thresholds, and privacy requirements.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#121316]">
-            <table className="w-full text-left font-mono text-xs">
-              <thead className="bg-[#18181D] text-white/50 uppercase text-[10px] border-b border-white/10">
-                <tr>
-                  <th className="py-4 px-6">Model</th>
-                  <th className="py-4 px-6">Context</th>
-                  <th className="py-4 px-6">Primary Specialty</th>
-                  <th className="py-4 px-6">Execution Location</th>
-                  <th className="py-4 px-6">Telemetry</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10 text-white/70">
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-white" /> Astra 6 (Default)
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">1M Tokens</td>
-                  <td className="py-4 px-6 font-sans">Autonomous task breakdown &amp; full-stack diff synthesis</td>
-                  <td className="py-4 px-6 text-white/90">Agency Accelerated Cloud</td>
-                  <td className="py-4 px-6 text-emerald-400">Zero Code Retention</td>
-                </tr>
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-400" /> Fabel 5.1
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">512K Tokens</td>
-                  <td className="py-4 px-6 font-sans">Formal type verification &amp; compiler invariants</td>
-                  <td className="py-4 px-6">High-Performance Cluster</td>
-                  <td className="py-4 px-6 text-emerald-400">Zero Code Retention</td>
-                </tr>
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-400" /> GPT 5.6 SOL
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">2M Tokens</td>
-                  <td className="py-4 px-6 font-sans">Cross-repository multi-file refactoring</td>
-                  <td className="py-4 px-6">Agency Cloud Fabric</td>
-                  <td className="py-4 px-6 text-emerald-400">Zero Code Retention</td>
-                </tr>
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400" /> GPT 6.1 SOL
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">4M Tokens</td>
-                  <td className="py-4 px-6 font-sans">Deep context enterprise monorepo comprehension</td>
-                  <td className="py-4 px-6">Dedicated Compute Pool</td>
-                  <td className="py-4 px-6 text-emerald-400">Air-Gap Eligible</td>
-                </tr>
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" /> OPUS 5.5
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">1M Tokens</td>
-                  <td className="py-4 px-6 font-sans">Recursive multi-agent validation loops &amp; testing</td>
-                  <td className="py-4 px-6">Enterprise Tier</td>
-                  <td className="py-4 px-6 text-emerald-400">Zero Code Retention</td>
-                </tr>
-                <tr className="hover:bg-white/[0.02]">
-                  <td className="py-4 px-6 font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" /> NEXA (Local Engine)
-                  </td>
-                  <td className="py-4 px-6 text-white font-bold">128K Tokens</td>
-                  <td className="py-4 px-6 font-sans">Edge on-device NPU/GPU execution with zero latency</td>
-                  <td className="py-4 px-6 text-emerald-400 font-bold">Local Physical Hardware</td>
-                  <td className="py-4 px-6 text-emerald-400 font-bold">100% Offline (Zero Network)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center">
-        <Button variant="primary" size="lg" href="/download" leftIcon={<Download className="w-4 h-4" />}>
-          Download CodeXa Studio Preview
-        </Button>
-      </div>
+      </Section>
+      <FinalCTA />
     </div>
   );
 }

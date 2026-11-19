@@ -19,7 +19,7 @@ const compact = (n: number) =>
  * Estimates monthly premium units with the same rule the metering service uses:
  * units = ceil((input + output tokens) × model weight); free local models cost 0.
  */
-export function UsageCalculator() {
+export function UsageCalculator({ index = "07" }: { index?: string }) {
   const [requests, setRequests] = useState(60);
   const [tokens, setTokens] = useState(2500);
   const [days, setDays] = useState(22);
@@ -46,7 +46,7 @@ export function UsageCalculator() {
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          index="06"
+          index={index}
           eyebrow="Usage estimator"
           title={
             <>

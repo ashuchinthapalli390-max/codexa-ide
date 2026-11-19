@@ -1,206 +1,113 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { CodeXaLogo } from "@/components/ui/CodeXaLogo";
-import { ExternalLink, ArrowRight, Sparkles } from "lucide-react";
+import { siteConfig } from "@/lib/config/site";
+
+const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
+  {
+    title: "Product",
+    links: [
+      { label: "Features", href: "/features" },
+      { label: "Workspace demo", href: "/workspace" },
+      { label: "CodeXa AI", href: "/ai" },
+      { label: "Model catalogue", href: "/models" },
+      { label: "Integrations", href: "/integrations" },
+      { label: "Pricing", href: "/pricing" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Documentation", href: "/docs" },
+      { label: "Release notes", href: "/releases" },
+      { label: "Download", href: "/download" },
+      { label: "Platforms", href: "/platforms" },
+      { label: "Compare", href: "/compare" },
+      { label: "Reviews", href: "/reviews" },
+      { label: "FAQ", href: "/faq" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "CodeXa Agency", href: siteConfig.links.agencyPortal, external: true },
+      { label: "Internship portal", href: siteConfig.links.agencyApply, external: true },
+      { label: "Security", href: "/security" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+    ],
+  },
+];
 
 export function Footer() {
-  return (
-    <footer className="w-full bg-[#000000] border-t border-white/5 text-white/70 pt-16 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top Callout Box (Matching NexCloud exact #1c1d21 community banner) */}
-        <div className="w-full mb-14 bg-[#1C1D21] border border-white/5 rounded-lg p-5 md:px-8 md:py-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-2xl">
-          <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
-            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-white">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-white text-base sm:text-[18px] font-orbitron font-semibold tracking-[0.9px] leading-[28px] mb-1">
-                Join the CodeXa Agency Developer Network
-              </h3>
-              <p className="text-[14px] text-white/70 font-sans leading-[20px]">
-                Get 24/7 technical support, CXA-DESK hardware key management, and insider canary builds.
-              </p>
-            </div>
-          </div>
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
+  const wordY = useTransform(scrollYProgress, [0, 1], ["60%", "0%"]);
+  const wordRotate = useTransform(scrollYProgress, [0, 1], [35, 0]);
+  const wordOpacity = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
 
-          <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-end">
+  return (
+    <footer ref={ref} className="relative overflow-hidden border-t border-white/[0.07] bg-black text-white/60">
+      <div className="mx-auto max-w-[1280px] px-4 pt-16 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[1.3fr_2fr]">
+          <div className="max-w-sm">
+            <CodeXaLogo size="md" subtitle="STUDIO IDE" />
+            <p className="mt-5 text-[14px] leading-relaxed text-white/50">{siteConfig.description}</p>
             <a
-              href="https://codxa-agency.online"
+              href={siteConfig.links.agencyPortal}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full md:w-auto px-6 py-2.5 rounded-[4px] bg-[#22C55E] hover:bg-[#16a34a] text-black text-base font-sans font-semibold tracking-[-0.02em] transition-colors flex items-center justify-center gap-2 shadow-sm"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-[13px] font-medium text-white transition hover:border-white/35"
             >
-              <span>Agency Portal</span>
-              <ArrowRight className="w-4 h-4 text-black" />
+              Join the Agency developer network <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
-        </div>
 
-        {/* 4-Column Directory Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/5 font-sans">
-          {/* Brand Identity Column (spans 2 cols) */}
-          <div className="lg:col-span-2 space-y-4">
-            <CodeXaLogo size="md" subtitle="STUDIO IDE" />
-            <p className="text-xs text-white/50 font-sans leading-relaxed max-w-sm">
-              CodeXa Studio IDE is an autonomous, AI-driven development environment precision-engineered by CodeXa Agency for engineers who demand speed, control, and verifiable autonomy.
-            </p>
-            <div className="pt-2 flex flex-col space-y-1.5 text-xs font-sans">
-              <div className="flex items-center gap-2 text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-                <span>
-                  Powered by <strong className="text-white">CodeXa Agency</strong>
-                </span>
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {COLUMNS.map((c) => (
+              <div key={c.title}>
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/35">{c.title}</p>
+                <ul className="mt-4 space-y-2.5">
+                  {c.links.map((l) => (
+                    <li key={l.label}>
+                      {l.external ? (
+                        <a href={l.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[14px] transition hover:text-white">
+                          {l.label} <ArrowUpRight className="h-3 w-3 opacity-50" />
+                        </a>
+                      ) : (
+                        <Link href={l.href} className="text-[14px] transition hover:text-white">
+                          {l.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-[11px] text-white/40">
-                Single database &amp; cryptographic identity across Web, Mobile &amp; Desktop.
-              </p>
-            </div>
-          </div>
-
-          {/* Product Links */}
-          <div>
-            <h4 className="text-[12px] font-sans font-bold uppercase tracking-[0.1em] text-white mb-4">
-              Product
-            </h4>
-            <ul className="space-y-2.5 text-[13px] font-sans font-medium">
-              <li>
-                <Link href="/workspace" className="hover:text-white transition-colors">
-                  Code Editor
-                </Link>
-              </li>
-              <li>
-                <Link href="/ai" className="hover:text-white transition-colors">
-                  CodeXa AI Models
-                </Link>
-              </li>
-              <li>
-                <Link href="/workspace" className="hover:text-white transition-colors">
-                  Live Preview Runtime
-                </Link>
-              </li>
-              <li>
-                <Link href="/models" className="hover:text-white transition-colors">
-                  AI Model Catalogue
-                </Link>
-              </li>
-              <li>
-                <Link href="/integrations" className="hover:text-white transition-colors">
-                  AI Provider Integrations
-                </Link>
-              </li>
-              <li>
-                <Link href="/compare" className="hover:text-white transition-colors">
-                  Competitor Comparison
-                </Link>
-              </li>
-              <li>
-                <Link href="/reviews" className="hover:text-white transition-colors">
-                  Community Reviews
-                </Link>
-              </li>
-              <li>
-                <Link href="/#availability" className="hover:text-white transition-colors text-white font-semibold">
-                  Platform Availability
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources & Docs */}
-          <div>
-            <h4 className="text-[12px] font-sans font-bold uppercase tracking-[0.1em] text-white mb-4">
-              Resources
-            </h4>
-            <ul className="space-y-2.5 text-[13px] font-sans font-medium">
-              <li>
-                <Link href="/docs" className="hover:text-white transition-colors">
-                  Documentation
-                </Link>
-              </li>
-              <li>
-                <Link href="/releases" className="hover:text-white transition-colors">
-                  Release Notes
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-white transition-colors">
-                  Frequently Asked Questions
-                </Link>
-              </li>
-              <li>
-                <Link href="/docs#shortcuts" className="hover:text-white transition-colors">
-                  Keyboard Shortcuts
-                </Link>
-              </li>
-              <li>
-                <Link href="/docs#licenses" className="hover:text-white transition-colors">
-                  Hardware Licensing (CXA-DESK)
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Agency Ecosystem */}
-          <div>
-            <h4 className="text-[12px] font-sans font-bold uppercase tracking-[0.1em] text-white mb-4">
-              Ecosystem
-            </h4>
-            <ul className="space-y-2.5 text-[13px] font-sans font-medium">
-              <li>
-                <a
-                  href="https://codxa-agency.online"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors flex items-center gap-1.5"
-                >
-                  <span>CodeXa Agency Portal</span>
-                  <ExternalLink className="w-3 h-3 text-white/50" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.codeaxisapply.xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors flex items-center gap-1.5"
-                >
-                  <span>Internship Portal</span>
-                  <ExternalLink className="w-3 h-3 text-white/50" />
-                </a>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-white transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="hover:text-white transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/security" className="hover:text-white transition-colors">
-                  Security Architecture
-                </Link>
-              </li>
-            </ul>
+            ))}
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
-          <div>
-            &copy; 2026 CodeXa Agency. All rights reserved. CodeXa Studio IDE is an official product of CodeXa Agency.
-          </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-              Official Launch: 17 November 2026
-            </span>
-          </div>
+        <div className="mt-14 flex flex-col gap-3 border-t border-white/[0.07] py-6 font-mono text-[11px] text-white/40 sm:flex-row sm:items-center sm:justify-between">
+          <span>© 2026 {siteConfig.agencyName}. All rights reserved.</span>
+          <span className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" /> Launched {siteConfig.officialLaunchDate}
+          </span>
         </div>
+      </div>
+
+      {/* Oversized wordmark rising out of the floor */}
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden [perspective:900px]">
+        <motion.p
+          style={reduce ? undefined : { y: wordY, rotateX: wordRotate, opacity: wordOpacity, transformOrigin: "50% 100%" }}
+          className="-mb-[0.18em] text-center text-[clamp(4.5rem,21vw,19rem)] font-semibold leading-none tracking-[-0.07em] text-transparent bg-gradient-to-b from-white/20 to-white/[0.02] bg-clip-text"
+        >
+          CODEXA
+        </motion.p>
       </div>
     </footer>
   );

@@ -36,7 +36,7 @@ function colorFor(m: AIModelDefinition): string {
   return "#E5E7EB";
 }
 
-export function ModelConstellation() {
+export function ModelConstellation({ index = "06" }: { index?: string }) {
   const [selected, setSelected] = useState(MODELS.findIndex((m) => m.id === "gpt-6-astra"));
   const model = MODELS[Math.max(0, selected)];
   const plans = plansFor(model);
@@ -48,7 +48,7 @@ export function ModelConstellation() {
     <section id="models" className="relative bg-black py-24 sm:py-32">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          index="05"
+          index={index}
           eyebrow="Model constellation"
           title={
             <>

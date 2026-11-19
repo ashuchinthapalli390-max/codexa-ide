@@ -20,7 +20,7 @@ const N = ARCHITECTURE_LAYERS.length;
  * Isometric stack of the five system layers. Scrolling pulls the plates apart
  * along Z (exploded view) and walks through each layer's explanation.
  */
-export function ArchitectureStack() {
+export function ArchitectureStack({ index = "05" }: { index?: string }) {
   const ref = useRef<HTMLElement>(null);
   const desktop = useMediaMin(1024);
   const reduce = useReducedMotion() ?? false;
@@ -73,7 +73,7 @@ export function ArchitectureStack() {
           {/* Copy */}
           <div className="order-1 flex flex-col gap-8 lg:order-2">
             <SectionHeading
-              index="04"
+              index={index}
               eyebrow="Architecture"
               title={
                 <>

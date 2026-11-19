@@ -5,16 +5,22 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { SUBSCRIPTION_PLANS } from "@/lib/pricing/plans";
-import { PlanTier } from "@/lib/pricing/types";
+import { PlanTier, SubscriptionPlan } from "@/lib/pricing/types";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { Reveal, SectionHeading, TiltCard } from "./primitives";
+import { PrebookDialog, PrebookMode } from "./PrebookDialog";
 
 const TIERS: PlanTier[] = ["STARTER", "PLUS", "PRO", "MAX"];
 const inr = (n: number) =>
   n.toLocaleString("en-IN", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
-export function PricingDeck() {
+export function PricingDeck({ index = "08" }: { index?: string }) {
   const [launch, setLaunch] = useState(true);
+  const [dialog, setDialog] = useState<{ plan: SubscriptionPlan; mode: PrebookMode } | null>(null);
+  const { user, entitlement } = useAuth();
   const discount = SUBSCRIPTION_PLANS.STARTER.pricing.discountPercent;
+  const isCurrent = (t: PlanTier) =>
+    !!user && (entitlement?.toLowerCase() === t.toLowerCase() || (entitlement === "customer_subscription" && t === "PRO"));
 
   return (
     <section id="pricing" className="relative bg-black py-24 sm:py-32">
@@ -22,7 +28,7 @@ export function PricingDeck() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <SectionHeading
-            index="07"
+            index={index}
             eyebrow="Pricing in INR"
             title={
               <>
@@ -118,18 +124,28 @@ export function PricingDeck() {
                       ))}
                     </ul>
 
-                    <Link
-                      href="/pricing#pricing"
-                      className={`group mt-auto flex h-11 items-center justify-center gap-2 rounded-lg pt-0 text-[14px] font-semibold tracking-[-0.02em] transition ${
-                        featured
-                          ? "bg-white text-black hover:bg-[#E5E7EB]"
-                          : "border border-white/15 text-white hover:border-white/35 hover:bg-white/[0.05]"
-                      }`}
-                      style={{ marginTop: 28 }}
-                    >
-                      {plan.prebookCtaText ?? plan.ctaText}
-                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                    </Link>
+                    {isCurrent(t) ? (
+                      <div className="mt-auto flex h-11 items-center justify-center gap-2 rounded-lg border border-[#22C55E]/30 bg-[#22C55E]/10 text-[14px] font-semibold text-[#86EFAC]" style={{ marginTop: 28 }}>
+                        <Check className="h-4 w-4" /> Current plan
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setDialog({ plan, mode: t === "MAX" ? "contact" : "prebook" })}
+                        className={`group mt-auto flex h-11 items-center justify-center gap-2 rounded-lg text-[14px] font-semibold tracking-[-0.02em] transition ${
+                          featured
+                            ? "bg-white text-black hover:bg-[#E5E7EB]"
+                            : "border border-white/15 text-white hover:border-white/35 hover:bg-white/[0.05]"
+                        }`}
+                        style={{ marginTop: 28 }}
+                      >
+                        {t === "MAX" ? "Talk to us" : plan.prebookCtaText}
+                        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                      </button>
+                    )}
+                    <p className="mt-2.5 text-center text-[11px] text-white/35">
+                      {t === "MAX" ? "Custom volume & dedicated SLA" : "No card now · cancel anytime"}
+                    </p>
                   </div>
                 </TiltCard>
               </Reveal>
@@ -140,12 +156,13 @@ export function PricingDeck() {
         <Reveal>
           <p className="mt-8 text-center text-[12.5px] text-white/40">
             NEXA Edge and CodeXa Models are unlimited on every plan. {SUBSCRIPTION_PLANS.STARTER.pricing.taxNotice}{" "}
-            <Link href="/pricing" className="text-white/70 underline-offset-4 hover:text-white hover:underline">
-              Full plan details
+            <Link href="/pricing#plan-matrix" className="text-white/70 underline-offset-4 hover:text-white hover:underline">
+              Compare every plan feature
             </Link>
           </p>
         </Reveal>
       </div>
+      <PrebookDialog plan={dialog?.plan ?? null} mode={dialog?.mode ?? "prebook"} onClose={() => setDialog(null)} />
     </section>
   );
 }

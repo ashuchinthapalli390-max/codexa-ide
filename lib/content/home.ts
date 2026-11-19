@@ -13,6 +13,7 @@ export const HOME_CHAPTERS: Chapter[] = [
   { id: "top", label: "Intro" },
   { id: "overview", label: "Overview" },
   { id: "workflow", label: "Workflow" },
+  { id: "highlights", label: "Highlights" },
   { id: "architecture", label: "Architecture" },
   { id: "models", label: "Models" },
   { id: "calculator", label: "Usage" },
@@ -177,6 +178,54 @@ export const ARCHITECTURE_LAYERS: ArchitectureLayer[] = [
     details: ["100% air-gapped offline mode", "Zero cloud telemetry by default", "BYOK keys stay in WinCred / Keychain / libsecret"],
     stat: { label: "Cloud telemetry", value: "0" },
     hue: "#22C55E",
+  },
+];
+
+export const HIGHLIGHTS = [
+  {
+    id: "unlimited",
+    kicker: "Unlimited local AI",
+    title: "Code all day without watching a meter.",
+    body: "NEXA Edge and the CodeXa AST models run on your own machine. They never consume premium units, so everyday completions, refactors and lookups stay free on every plan.",
+    stat: { value: "₹0", label: "Cost of local AI requests" },
+    accent: "#22C55E",
+    bullets: ["Runs fully offline", "No monthly cap", "Included on every plan"],
+  },
+  {
+    id: "universal",
+    kicker: "Universal model access",
+    title: "Frontier models from the very first plan.",
+    body: "GPT-6 Astra, Fabel 5.1, Gemini Flash and OPUS 5.5 are unlocked on Starter. You choose a plan for the volume you need, not to unlock the good models.",
+    stat: { value: "9", label: "Models behind one router" },
+    accent: "#7DD3FC",
+    bullets: ["Weighted, transparent units", "Automatic fallback on retirement", "Switch model per request"],
+  },
+  {
+    id: "verified",
+    kicker: "Verified diffs",
+    title: "Nothing reaches your branch unchecked.",
+    body: "Every AI patch passes the Fabel 5.1 verification gate for type soundness and compiler invariants, then your tests run in the integrated terminal before you accept it.",
+    stat: { value: "100%", label: "Of AI diffs gated" },
+    accent: "#FCD34D",
+    bullets: ["Type-soundness checks", "Linter invariant gate", "Readable commit summaries"],
+  },
+  {
+    id: "private",
+    kicker: "Private by default",
+    title: "Your code and your keys stay yours.",
+    body: "Zero cloud telemetry unless you turn it on. Bring your own provider keys and they are stored only in your operating system's keychain, never on CodeXa servers.",
+    stat: { value: "0", label: "Bytes of telemetry by default" },
+    accent: "#C4B5FD",
+    bullets: ["Air-gapped offline mode", "OS keychain BYOK vault", "You own all generated code"],
+  },
+  {
+    id: "inr",
+    kicker: "Built for India",
+    title: "Priced in rupees. Paid with UPI.",
+    body: "Plans start at ₹328 a month with GST itemised on the invoice. Pay with UPI, RuPay, cards or net banking — no foreign currency fees and no surprise overages.",
+    stat: { value: "₹328", label: "Starter, per month" },
+    accent: "#F9A8D4",
+    bullets: ["UPI, RuPay, cards, net banking", "GST-compliant invoices", "Cancel anytime"],
   },
 ];
 

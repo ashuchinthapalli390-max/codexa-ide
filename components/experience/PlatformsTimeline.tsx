@@ -9,32 +9,36 @@ import { Pill, Reveal, SectionHeading, TiltCard } from "./primitives";
 
 const ORDER: PlatformRelease["os"][] = ["windows", "android", "macos", "linux", "ios"];
 
-const STATUS: Record<PlatformRelease["status"], { label: string; tone: "green" | "blue" | "amber" | "neutral" }> = {
+export const STATUS: Record<PlatformRelease["status"], { label: string; tone: "green" | "blue" | "amber" | "neutral" }> = {
   available: { label: "Available", tone: "green" },
   preview: { label: "Preview", tone: "blue" },
   coming_soon: { label: "Coming soon", tone: "amber" },
   planned: { label: "Planned", tone: "neutral" },
 };
 
-function OsIcon({ os }: { os: PlatformRelease["os"] }) {
-  const cls = "h-5 w-5";
-  if (os === "macos" || os === "ios") return <Apple className={cls} />;
-  if (os === "linux") return <Terminal className={cls} />;
-  if (os === "android") return <Smartphone className={cls} />;
-  return <Monitor className={cls} />;
+export function OsIcon({ os, className = "h-5 w-5" }: { os: PlatformRelease["os"]; className?: string }) {
+  if (os === "macos" || os === "ios") return <Apple className={className} />;
+  if (os === "linux") return <Terminal className={className} />;
+  if (os === "android") return <Smartphone className={className} />;
+  return <Monitor className={className} />;
 }
 
-export function PlatformsTimeline() {
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 0.8", "end 0.5"] });
-  const line = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
+export function PlatformsTimeline({
+  index = "10",
+  showTimeline = true,
+  showLinks = true,
+}: {
+  index?: string;
+  showTimeline?: boolean;
+  showLinks?: boolean;
+}) {
   const platforms = ORDER.map((k) => releaseManifest.platforms[k]).filter(Boolean);
 
   return (
     <section id="availability" className="relative bg-black py-24 sm:py-32">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          index="09"
+          index={index}
           eyebrow="Platforms & releases"
           title={
             <>
@@ -70,44 +74,56 @@ export function PlatformsTimeline() {
           })}
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/download" className="group inline-flex h-10 items-center gap-2 rounded-lg bg-white px-5 text-[14px] font-semibold text-black hover:bg-[#E5E7EB]">
-            Downloads <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </Link>
-          <Link href="/release-status" className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/15 px-5 text-[14px] font-semibold text-white hover:border-white/35">
-            Release status
-          </Link>
-        </div>
+        {showLinks && (
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/download" className="group inline-flex h-10 items-center gap-2 rounded-lg bg-white px-5 text-[14px] font-semibold text-black hover:bg-[#E5E7EB]">
+              Downloads <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+            <Link href="/releases" className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/15 px-5 text-[14px] font-semibold text-white hover:border-white/35">
+              Release notes
+            </Link>
+          </div>
+        )}
 
-        {/* Timeline */}
-        <div ref={timelineRef} className="relative mt-24 pl-8 sm:pl-12">
-          <div className="absolute bottom-0 left-[7px] top-0 w-px bg-white/[0.08] sm:left-[11px]" />
-          <motion.div style={{ scaleY: line }} className="absolute bottom-0 left-[7px] top-0 w-px origin-top bg-[#22C55E] sm:left-[11px]" />
-
-          <Reveal>
-            <p className="mb-10 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">Release history</p>
-          </Reveal>
-
-          {releaseManifest.history.map((h, i) => (
-            <Reveal key={h.version} delay={i * 0.05} className="relative mb-14 last:mb-0">
-              <span className="absolute -left-8 top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-[#22C55E]/50 bg-black sm:-left-12 sm:h-6 sm:w-6">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-              </span>
-              <div className="flex flex-wrap items-baseline gap-3">
-                <h3 className="text-2xl font-semibold tracking-[-0.04em] text-white">{h.version}</h3>
-                <span className="font-mono text-[11px] text-white/40">{h.date}</span>
-                <Pill>{h.type}</Pill>
-              </div>
-              <div className="mt-5 grid gap-6 lg:grid-cols-3">
-                <List title="Highlights" items={h.highlights} dot="bg-[#22C55E]" />
-                <List title="Fixes" items={h.fixes} dot="bg-sky-300" />
-                {h.knownIssues && <List title="Known issues" items={h.knownIssues} dot="bg-amber-300" />}
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        {showTimeline && <ReleaseHistory />}
       </div>
     </section>
+  );
+}
+
+/** Release history with a line that draws itself as you scroll. */
+export function ReleaseHistory() {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 0.8", "end 0.5"] });
+  const line = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
+
+  return (
+    <div ref={timelineRef} className="relative mt-24 pl-8 sm:pl-12">
+      <div className="absolute bottom-0 left-[7px] top-0 w-px bg-white/[0.08] sm:left-[11px]" />
+      <motion.div style={{ scaleY: line }} className="absolute bottom-0 left-[7px] top-0 w-px origin-top bg-[#22C55E] sm:left-[11px]" />
+
+      <Reveal>
+        <p className="mb-10 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">Release history</p>
+      </Reveal>
+
+      {releaseManifest.history.map((h, i) => (
+        <Reveal key={h.version} delay={i * 0.05} className="relative mb-14 last:mb-0">
+          <span className="absolute -left-8 top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-[#22C55E]/50 bg-black sm:-left-12 sm:h-6 sm:w-6">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+          </span>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h3 className="text-2xl font-semibold tracking-[-0.04em] text-white">{h.version}</h3>
+            <span className="font-mono text-[11px] text-white/40">{h.date}</span>
+            <Pill>{h.type}</Pill>
+          </div>
+          <div className="mt-5 grid gap-6 lg:grid-cols-3">
+            <List title="Highlights" items={h.highlights} dot="bg-[#22C55E]" />
+            <List title="Fixes" items={h.fixes} dot="bg-sky-300" />
+            {h.knownIssues && <List title="Known issues" items={h.knownIssues} dot="bg-amber-300" />}
+          </div>
+        </Reveal>
+      ))}
+    </div>
   );
 }
 

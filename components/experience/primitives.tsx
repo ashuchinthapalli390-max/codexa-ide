@@ -7,6 +7,7 @@ import {
   useInView,
   useMotionValue,
   useReducedMotion,
+  useScroll,
   useSpring,
   useTransform,
 } from "framer-motion";
@@ -59,11 +60,11 @@ export function SectionHeading({
           <Eyebrow index={index}>{eyebrow}</Eyebrow>
         </div>
       </Reveal>
-      <Reveal delay={0.05}>
+      <MaskReveal delay={0.05}>
         <h2 className="text-[clamp(2rem,4.6vw,3.6rem)] font-semibold leading-[1.02] tracking-[-0.045em] text-white">
           {title}
         </h2>
-      </Reveal>
+      </MaskReveal>
       {lead && (
         <Reveal delay={0.1}>
           <p className="text-[15px] sm:text-[17px] leading-relaxed text-white/60 font-inter tracking-[-0.01em]">{lead}</p>
@@ -98,6 +99,54 @@ export function Reveal({
     >
       {children}
     </Comp>
+  );
+}
+
+/** Wipes content up from behind a mask with a slight 3D tilt as it enters the viewport. */
+export function MaskReveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  if (reduce) return <div className={className}>{children}</div>;
+  return (
+    <div className={`[perspective:900px] ${className}`}>
+      <motion.div
+        initial={{ clipPath: "inset(0% 0% 100% 0%)", y: 40, rotateX: -35, opacity: 0 }}
+        whileInView={{ clipPath: "inset(0% 0% -10% 0%)", y: 0, rotateX: 0, opacity: 1 }}
+        viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+        transition={{ duration: 1, delay, ease: EASE_EDITORIAL }}
+        style={{ transformOrigin: "50% 100%" }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+/** Element drifts vertically at a different speed than the page (parallax). */
+export function Parallax({
+  children,
+  speed = 0.2,
+  className = "",
+}: {
+  children: React.ReactNode;
+  speed?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [`${speed * 100}%`, `${-speed * 100}%`]);
+  return (
+    <motion.div ref={ref} style={reduce ? undefined : { y }} className={className}>
+      {children}
+    </motion.div>
   );
 }
 

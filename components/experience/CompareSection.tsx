@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Minus, X } from "lucide-react";
-import { COMPARISON_CATEGORIES, PRICING_COMPARISON_CARDS } from "@/components/sections/CompetitorComparisonSection";
+import { COMPARISON_CATEGORIES, PRICING_COMPARISON_CARDS } from "@/lib/content/compare";
 import { Reveal, SectionHeading } from "./primitives";
 
 const COLS = [
@@ -32,7 +32,7 @@ function Cell({ v, highlight }: { v: string | boolean; highlight?: boolean }) {
   return <span className={`text-[13px] leading-snug ${highlight ? "text-white" : "text-white/55"}`}>{v}</span>;
 }
 
-export function CompareSection() {
+export function CompareSection({ index = "09" }: { index?: string }) {
   const [cat, setCat] = useState(0);
   const [mobileCol, setMobileCol] = useState<ColKey>("cursor");
   const category = COMPARISON_CATEGORIES[cat];
@@ -41,7 +41,7 @@ export function CompareSection() {
     <section id="compare" className="relative bg-black py-24 sm:py-32">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          index="08"
+          index={index}
           eyebrow="Side by side"
           title={
             <>

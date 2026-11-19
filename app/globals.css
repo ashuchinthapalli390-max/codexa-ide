@@ -37,7 +37,7 @@
   --card-gap: 24px;
   --header-height: 72px;
   /* announcement bar + sticky header; pinned scroll scenes stick below this */
-  --nav-offset: 104px;
+  --nav-offset: 100px;
   --surface-radius: 16px;
   --overlay-layer: 90;
   --motion-duration: 350ms;
@@ -210,6 +210,12 @@ body {
 
 .promo-banner-container:hover .promo-scroll {
   animation-play-state: paused;
+}
+
+@media (max-width: 639px) {
+  :root {
+    --nav-offset: 64px; /* announcement strip is hidden on phones */
+  }
 }
 
 /* Pinned scroll scene viewport (sits under the sticky navbar) */

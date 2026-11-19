@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Tag, Sparkles, Copy, Check, X, ArrowRight, Clock, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Check, Clock, Copy, Loader2, Sparkles, Tag, X } from "lucide-react";
 
 interface SpecialOfferFloatingWidgetProps {
   onClaimSuccess?: () => void;
-  isHidden?: boolean; // Controlled by collision manager
+  isHidden?: boolean; // controlled by the floating-widget collision manager
 }
 
 interface TimeRemaining {
@@ -16,259 +17,197 @@ interface TimeRemaining {
   isExpired: boolean;
 }
 
-export function SpecialOfferFloatingWidget({
-  onClaimSuccess,
-  isHidden = false,
-}: SpecialOfferFloatingWidgetProps) {
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [claimSuccess, setClaimSuccess] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
-  const [expiryTimestamp, setExpiryTimestamp] = useState<string>("2026-11-17T00:00:00+05:30");
-  const [timeLeft, setTimeLeft] = useState<TimeRemaining>({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
+function remaining(targetIso: string): TimeRemaining {
+  const diff = new Date(targetIso).getTime() - Date.now();
+  if (!Number.isFinite(diff) || diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
+  return {
+    days: Math.floor(diff / 86_400_000),
+    hours: Math.floor((diff / 3_600_000) % 24),
+    minutes: Math.floor((diff / 60_000) % 60),
+    seconds: Math.floor((diff / 1000) % 60),
     isExpired: false,
-  });
+  };
+}
 
-  const calculateTimeRemaining = useCallback((targetIso: string): TimeRemaining => {
-    const target = new Date(targetIso).getTime();
-    const now = Date.now();
-    const difference = target - now;
+/**
+ * Floating "Claim 20% off" pill + panel. Opens from the pill or from any
+ * `open-codexa-offer` window event (dispatched by the navbar).
+ */
+export function SpecialOfferFloatingWidget({ onClaimSuccess, isHidden = false }: SpecialOfferFloatingWidgetProps) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expiry, setExpiry] = useState<string | null>(null);
+  const [left, setLeft] = useState<TimeRemaining | null>(null);
 
-    if (difference <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
-    }
-
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / 1000 / 60) % 60);
-    const seconds = Math.floor((difference / 1000) % 60);
-
-    return { days, hours, minutes, seconds, isExpired: false };
-  }, []);
-
-  // Check dismissal
   useEffect(() => {
     try {
-      const dismissedUntil = localStorage.getItem("codexa_floating_offer_dismissed");
-      if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
-        setIsDismissed(true);
-      }
-      // Also check if already claimed
-      const claimedCookie = document.cookie.includes("cxa_discount_claimed=true");
-      if (claimedCookie) {
-        setClaimSuccess(true);
-      }
-    } catch {}
+      const until = localStorage.getItem("codexa_floating_offer_dismissed");
+      if (until && Number(until) > Date.now()) setDismissed(true);
+    } catch {
+      /* storage unavailable */
+    }
+    if (document.cookie.includes("cxa_discount_claimed=true")) setClaimed(true);
   }, []);
 
-  // Fetch campaign config
   useEffect(() => {
     fetch("/api/promotions")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.campaign?.expiresAt) {
-          setExpiryTimestamp(data.campaign.expiresAt);
-          setTimeLeft(calculateTimeRemaining(data.campaign.expiresAt));
-        }
-      })
+      .then((r) => r.json())
+      .then((d) => d.campaign?.expiresAt && setExpiry(d.campaign.expiresAt))
       .catch(() => {});
-  }, [calculateTimeRemaining]);
+  }, []);
 
-  // Live ticker
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeRemaining(expiryTimestamp));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [expiryTimestamp, calculateTimeRemaining]);
+    if (!expiry) return;
+    setLeft(remaining(expiry));
+    const t = setInterval(() => setLeft(remaining(expiry)), 1000);
+    return () => clearInterval(t);
+  }, [expiry]);
 
-  const handleCopyCode = async () => {
+  // The navbar "Claim offer" button opens this panel, even if the pill was dismissed.
+  useEffect(() => {
+    const onOpen = () => {
+      setDismissed(false);
+      setOpen(true);
+    };
+    window.addEventListener("open-codexa-offer", onOpen);
+    return () => window.removeEventListener("open-codexa-offer", onOpen);
+  }, []);
+
+  const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText("CODEXA20");
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  };
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked */
+    }
+  }, []);
 
-  const handleClaimDiscount = async () => {
-    setIsClaiming(true);
+  const claim = async () => {
+    setClaiming(true);
+    setError(null);
     try {
       const res = await fetch("/api/promotions/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: "CODEXA20", planId: "PLUS" }),
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        setClaimSuccess(true);
-        // Dispatch global event for instant reactivity across all pricing cards
-        window.dispatchEvent(new CustomEvent("codexa-discount-claimed"));
-        if (onClaimSuccess) onClaimSuccess();
-        setTimeout(() => {
-          setPanelOpen(false);
-          // Scroll to pricing so user sees the discounted prices
-          const pricingEl = document.getElementById("pricing");
-          if (pricingEl) pricingEl.scrollIntoView({ behavior: "smooth" });
-        }, 1200);
-      } else {
-        alert(data.error || "Failed to claim coupon.");
-      }
-    } catch {
-      alert("Network error. Please try again.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not claim the offer.");
+      setClaimed(true);
+      window.dispatchEvent(new CustomEvent("codexa-discount-claimed"));
+      onClaimSuccess?.();
+      setTimeout(() => {
+        setOpen(false);
+        document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+      }, 1100);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error.");
     } finally {
-      setIsClaiming(false);
+      setClaiming(false);
     }
   };
 
-  const handleDismissPill = (e: React.MouseEvent) => {
+  const dismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsDismissed(true);
-    setPanelOpen(false);
+    setDismissed(true);
+    setOpen(false);
     try {
-      localStorage.setItem(
-        "codexa_floating_offer_dismissed",
-        (Date.now() + 7 * 24 * 60 * 60 * 1000).toString()
-      );
-    } catch {}
+      localStorage.setItem("codexa_floating_offer_dismissed", String(Date.now() + 7 * 86_400_000));
+    } catch {
+      /* storage unavailable */
+    }
   };
 
-  if (isDismissed || isHidden) return null;
+  if (isHidden || dismissed) return null;
 
   return (
-    <div className="fixed right-4 sm:right-6 bottom-6 z-40 select-none">
-      {/* Expanded Popover Panel (Anchored above button) */}
-      {panelOpen && (
-        <div className="absolute right-0 bottom-14 w-[360px] sm:w-[390px] max-w-[calc(100vw-32px)] bg-[#0B0C0E] border border-white/15 rounded-2xl p-6 shadow-[0_25px_70px_rgba(0,0,0,0.95)] text-white animate-in slide-in-from-bottom-3 duration-200">
-          {/* Close Panel Button */}
-          <button
-            onClick={() => setPanelOpen(false)}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-white/50 hover:text-white bg-white/5 hover:bg-white/10 transition-colors focus:outline-none"
-            aria-label="Close discount panel"
+    <div className="fixed bottom-5 right-4 z-[950] select-none sm:bottom-6 sm:right-6">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96, rotateX: -12 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 300, damping: 26 }}
+            style={{ transformPerspective: 1000, transformOrigin: "100% 100%" }}
+            className="absolute bottom-14 right-0 w-[min(380px,calc(100vw-32px))] overflow-hidden rounded-3xl border border-white/[0.12] bg-[#0B0B0D] p-6 text-white shadow-[0_30px_90px_rgba(0,0,0,0.85)]"
           >
-            <X className="w-4 h-4" />
-          </button>
-
-          {/* Eyebrow */}
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#A1A4AE]">
-              PRE-BETA EXCLUSIVE
-            </span>
-          </div>
-
-          {/* Heading */}
-          <h3 className="text-xl font-orbitron font-bold tracking-tight text-white mb-1.5">
-            Unlock 20% Off
-          </h3>
-
-          <p className="text-xs text-white/70 font-sans leading-relaxed mb-4">
-            Claim your pre-beta offer and save 20% on your first CodeXa subscription payment across all four plans.
-          </p>
-
-          {/* Coupon Code Block */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#121316] border border-white/10 mb-4 font-mono text-xs">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-emerald-400" />
-              <span className="text-white font-bold tracking-wider">CODEXA20</span>
-            </div>
-
-            <button
-              onClick={handleCopyCode}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-white text-[11px] font-sans font-medium transition-colors flex items-center gap-1"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span className="text-emerald-400">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3 h-3 text-white/60" />
-                  <span>Copy</span>
-                </>
-              )}
+            <div aria-hidden className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#22C55E]/15 blur-3xl" />
+            <button onClick={() => setOpen(false)} aria-label="Close offer" className="absolute right-4 top-4 rounded-lg p-1.5 text-white/50 hover:bg-white/[0.06] hover:text-white">
+              <X className="h-4 w-4" />
             </button>
-          </div>
+            <p className="relative flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.2em] text-[#4ADE80]">
+              <Sparkles className="h-3.5 w-3.5" /> Pre-beta offer
+            </p>
+            <h3 className="relative mt-3 text-2xl font-semibold tracking-[-0.04em]">20% off your first month</h3>
+            <p className="relative mt-2 text-[13.5px] leading-relaxed text-white/60">Works on Starter, Plus, Pro and Max. Claim it now and it applies when you pre-book.</p>
 
-          {/* Countdown Clock */}
-          <div className="mb-5">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-white/40 mb-1.5 flex items-center gap-1.5">
-              <Clock className="w-3 h-3" />
-              <span>Offer Closes In (Launch IST)</span>
+            <div className="relative mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-black/50 p-3 font-mono text-[13px]">
+              <span className="flex items-center gap-2 font-semibold tracking-wider">
+                <Tag className="h-4 w-4 text-[#4ADE80]" /> CODEXA20
+              </span>
+              <button onClick={copy} className="flex items-center gap-1.5 rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11.5px] hover:bg-white/[0.14]">
+                {copied ? <Check className="h-3 w-3 text-[#4ADE80]" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
             </div>
-            <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
-              {[
-                { label: "DAYS", val: timeLeft.days },
-                { label: "HRS", val: timeLeft.hours },
-                { label: "MIN", val: timeLeft.minutes },
-                { label: "SEC", val: timeLeft.seconds },
-              ].map((t) => (
-                <div key={t.label} className="p-2 rounded-lg bg-[#141519] border border-white/5">
-                  <div className="text-sm font-bold text-white tabular-nums">
-                    {String(t.val).padStart(2, "0")}
-                  </div>
-                  <div className="text-[9px] text-white/40">{t.label}</div>
+
+            {left && !left.isExpired && (
+              <div className="relative mt-4">
+                <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+                  <Clock className="h-3 w-3" /> Offer closes in
+                </p>
+                <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
+                  {(["days", "hours", "minutes", "seconds"] as const).map((k) => (
+                    <div key={k} className="rounded-lg border border-white/[0.06] bg-black/40 p-2">
+                      <p className="text-[15px] font-semibold tabular-nums">{String(left[k]).padStart(2, "0")}</p>
+                      <p className="text-[9px] uppercase text-white/35">{k.slice(0, 3)}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* Claim Button */}
-          {claimSuccess ? (
-            <div className="w-full py-2.5 px-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-sans font-semibold text-xs flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" />
-              <span>20% Discount Claimed! Check Plans Below</span>
-            </div>
-          ) : (
-            <button
-              onClick={handleClaimDiscount}
-              disabled={isClaiming}
-              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-200 active:scale-[0.98] text-black font-sans font-semibold text-xs tracking-tight transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-            >
-              {isClaiming ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Activating Discount...</span>
-                </>
+            <div className="relative mt-5">
+              {claimed ? (
+                <p className="flex items-center justify-center gap-2 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 py-3 text-[13.5px] font-semibold text-[#86EFAC]">
+                  <Check className="h-4 w-4" /> Discount claimed — it applies when you pre-book
+                </p>
               ) : (
-                <>
-                  <span>Claim Discount</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
+                <button
+                  onClick={claim}
+                  disabled={claiming}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-[14px] font-semibold text-black hover:bg-[#E5E7EB] disabled:opacity-60"
+                >
+                  {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  {claiming ? "Activating…" : "Claim discount"}
+                </button>
               )}
-            </button>
-          )}
-        </div>
-      )}
+              {error && <p className="mt-2 text-[12.5px] text-rose-300">{error}</p>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Floating Offer Pill Trigger */}
-      <div className="flex items-center gap-1 bg-[#0E0F12] border border-white/15 hover:border-white/30 rounded-full p-1.5 pl-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.8)] transition-all hover:scale-[1.02]">
-        <button
-          onClick={() => setPanelOpen(!panelOpen)}
-          className="flex items-center gap-2 text-xs font-sans font-medium text-white focus:outline-none"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <Tag className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="font-semibold tracking-tight">Claim 20% Off</span>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2 }}
+        className="flex items-center gap-1 rounded-full border border-white/15 bg-black/80 p-1.5 pl-3.5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl transition hover:border-white/30"
+      >
+        <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 text-[12.5px] font-semibold text-white" aria-expanded={open}>
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#22C55E]" />
+          {claimed ? "20% off claimed" : "Claim 20% off"}
         </button>
-
-        <button
-          onClick={handleDismissPill}
-          className="p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors ml-1 focus:outline-none"
-          title="Dismiss offer"
-          aria-label="Dismiss offer"
-        >
-          <X className="w-3.5 h-3.5" />
+        <button onClick={dismiss} aria-label="Dismiss offer" className="ml-1 rounded-full p-1 text-white/40 hover:bg-white/10 hover:text-white">
+          <X className="h-3.5 w-3.5" />
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 }
